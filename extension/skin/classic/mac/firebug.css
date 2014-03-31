@@ -228,7 +228,7 @@
 }
 
 #fbToggleCommandEditor {
-    list-style-image: url(chrome://firebug/skin/mac/minimize.svg);
+    width: 26px !important;
 }
 
 #fbToggleCommandEditorBox .column {
