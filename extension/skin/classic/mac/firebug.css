@@ -560,6 +560,10 @@ toolbarbutton[type="menu"] > toolbarbutton {
     display: none;
 }
 
+/* Separator for the CSS/source location buttons */
+#fbLocationSeparator {
+    display: none;
+}
 
 /************************************************************************************************/
 /* Scrollable TabBar + TabList */
