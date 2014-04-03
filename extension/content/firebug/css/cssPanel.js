@@ -1238,7 +1238,7 @@ Firebug.CSSStyleSheetPanel.prototype = Obj.extend(Panel,
             var propName = propNameNode.textContent.toLowerCase();
             var styleRule = Firebug.getRepObject(prop);
             var text = this.getCSSText(styleRule, propName);
-            var caretPosition = prop.ownerDocument.caretPositionFromPoint(x, y); 
+            var caretPosition = prop.ownerDocument.caretPositionFromPoint(x, y);
             var cssValueInfo = this.getCSSValueInfo(propName, text, caretPosition.offset);
 
             switch (cssValueInfo.type)
@@ -1255,7 +1255,7 @@ Firebug.CSSStyleSheetPanel.prototype = Obj.extend(Panel,
                         }
                     );
                     break;
-            
+
                 case "url":
                     if (Css.isImageProperty(propName))
                     {
@@ -1264,7 +1264,7 @@ Firebug.CSSStyleSheetPanel.prototype = Obj.extend(Panel,
                         var baseURL = this.getStylesheetURL(rule, true);
                         var relURL = CSSModule.parseURLValue(cssValueInfo.value);
                         var absURL = Url.isDataURL(relURL) ? relURL : Url.absoluteURL(relURL, baseURL);
-            
+
                         items.push(
                             {
                                 id: "fbCopyImageLocation",
@@ -1511,7 +1511,7 @@ Firebug.CSSStyleSheetPanel.prototype = Obj.extend(Panel,
             if (styleSheets.length)
             {
                 var sheet = styleSheets[0];
-                return (Firebug.filterSystemURLs &&
+                return (Options.get("filterSystemURLs") &&
                     Url.isSystemURL(Css.getURLForStyleSheet(sheet))) ? null : sheet;
             }
         }
@@ -1589,8 +1589,9 @@ Firebug.CSSStyleSheetPanel.prototype = Obj.extend(Panel,
 
     search: function(text, reverse)
     {
-        var curDoc = this.searchCurrentDoc(!Firebug.searchGlobal, text, reverse);
-        if (!curDoc && Firebug.searchGlobal)
+        var searchGlobal = Options.get("searchGlobal");
+        var curDoc = this.searchCurrentDoc(!searchGlobal, text, reverse);
+        if (!curDoc && searchGlobal)
         {
             return this.searchOtherDocs(text, reverse) ||
                 this.searchCurrentDoc(true, text, reverse);
@@ -1993,15 +1994,15 @@ CSSEditor.prototype = domplate(InlineEditor.prototype,
             rule instanceof window.MozCSSKeyframesRule))
         {
             target.textContent = value;
-            
+
             if (FBTrace.DBG_CSS)
             {
                 FBTrace.sysout("CSSEditor.saveEdit: @keyframes rule name: " +
                     previousValue + "->" + value);
             }
-            
+
             rule.name = value;
-            
+
             var saveSuccess = (rule.name == value);
             this.box.setAttribute("saveSuccess", saveSuccess);
         }

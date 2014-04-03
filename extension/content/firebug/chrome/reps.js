@@ -1002,7 +1002,7 @@ FirebugReps.Element = domplate(Rep,
 
     getAttrValue: function(attr)
     {
-        var limit = Firebug.displayedAttributeValueLimit;
+        var limit = Options.get("displayedAttributeValueLimit");
         return (limit > 0) ? Str.cropString(attr.value, limit) : attr.value;
     },
 
@@ -1109,14 +1109,14 @@ FirebugReps.Element = domplate(Rep,
     getNodeTextGroups: function(element)
     {
         var text =  element.textContent;
-        if (!Firebug.showFullTextNodes)
+        if (!Options.get("showFullTextNodes"))
         {
             text = Str.cropString(text,50);
         }
 
         var escapeGroups=[];
 
-        if (Firebug.showTextNodesWithWhitespace)
+        if (Options.get("showTextNodesWithWhitespace"))
             escapeGroups.push({
                 "group": "whitespace",
                 "class": "nodeWhiteSpace",
@@ -1127,7 +1127,7 @@ FirebugReps.Element = domplate(Rep,
                 }
             });
 
-        if (Firebug.entityDisplay != "symbols")
+        if (Options.get("entityDisplay") !== "symbols")
             escapeGroups.push({
                 "group": "text",
                 "class": "nodeTextEntity",
@@ -1849,9 +1849,6 @@ FirebugReps.Event = domplate(Rep,
     // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
 
     tag:
-        TAG("$copyEventTag", {object: "$object|copyEvent"}),
-
-    copyEventTag:
         OBJECTLINK("$object|summarizeEvent"),
 
     // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
@@ -1871,16 +1868,11 @@ FirebugReps.Event = domplate(Rep,
         return info.join("");
     },
 
-    copyEvent: function(event)
-    {
-        return new Dom.EventCopy(event);
-    },
-
     // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
 
     supportsObject: function(object, type)
     {
-        return object instanceof window.Event || object instanceof Dom.EventCopy;
+        return object instanceof window.Event;
     },
 
     getTitle: function(event, context)
@@ -1943,7 +1935,7 @@ FirebugReps.SourceLink = domplate(Rep,
                     sourceLink.href + "\': " + exc, exc);
         }
 
-        var maxWidth = Firebug.sourceLinkLabelWidth;
+        var maxWidth = Options.get("sourceLinkLabelWidth");
         if (maxWidth > 0)
             fileName = Str.cropString(fileName, maxWidth);
 

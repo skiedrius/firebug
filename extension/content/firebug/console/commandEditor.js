@@ -10,13 +10,14 @@ define([
     "firebug/lib/css",
     "firebug/lib/options",
     "firebug/lib/promise",
+    "firebug/lib/string",
     "firebug/chrome/module",
     "firebug/chrome/menu",
     "firebug/console/autoCompleter",
     "firebug/console/commandLine",
     "firebug/editor/sourceEditor",
 ],
-function(Firebug, FBTrace, Obj, Events, Dom, Locale, Css, Options, Promise, Module, Menu,
+function(Firebug, FBTrace, Obj, Events, Dom, Locale, Css, Options, Promise, Str, Module, Menu,
     AutoCompleter, CommandLine, SourceEditor) {
 
 "use strict";
@@ -123,7 +124,7 @@ var CommandEditor = Obj.extend(Module,
         var lastLineNo = this.editor.lastLineNo();
         this.editor.setCursor(lastLineNo, this.editor.getCharCount(lastLineNo));
 
-        Firebug.chrome.applyTextSize(Firebug.textSize);
+        Firebug.chrome.applyTextSize(Options.get("textSize"));
 
         if (FBTrace.DBG_COMMANDEDITOR)
             FBTrace.sysout("commandEditor.onEditorLoad; SourceEditor loaded");
@@ -260,7 +261,7 @@ var CommandEditor = Obj.extend(Module,
         var selection;
         if (this.editor)
         {
-            selection = this.editor.getSelection(); 
+            selection = this.editor.getSelection();
             return selection.start === selection.end;
         }
         return true;
@@ -320,7 +321,7 @@ var CommandEditor = Obj.extend(Module,
         }
     },
 
-    // Method used for the hack of issue 6824 (Randomly get "Unresponsive Script Warning" with 
+    // Method used for the hack of issue 6824 (Randomly get "Unresponsive Script Warning" with
     // commandEditor.html). Adds or removes the .CommandEditor-Hidden class.
     // IMPORTANT: that method should only be used within the Firebug code, and may be removed soon.
     addOrRemoveClassCommandEditorHidden: function(addClass)
@@ -349,7 +350,14 @@ var CommandEditor = Obj.extend(Module,
             {
                 TraceError.sysout("commandEditor.prettyPrint; ERROR " + data.error, data);
 
-                Firebug.Console.logFormatted([data.error], context, "error", true);
+                // Remove stack trace info from the error message (separated by a newline,
+                // see pretty-print-worker.js)
+                var message = Str.safeToString(data.error);
+                var index = message.indexOf("\n");
+                message = message.substr(0, index);
+
+                // Log only an error message into the Console panel.
+                Firebug.Console.logFormatted([message], context, "error", true);
 
                 deferred.reject(data.error);
             }
@@ -377,11 +385,13 @@ var CommandEditor = Obj.extend(Module,
 // ********************************************************************************************* //
 // Getters/setters
 
-Object.defineProperty(CommandEditor, "value", {
+Object.defineProperty(CommandEditor, "value",
+{
     get: function()
     {
         return this.getText();
     },
+
     set: function(val)
     {
         this.setText(val);
@@ -483,7 +493,7 @@ TextEditor.prototype =
         var end = this.textBox.selectionEnd;
 
         return this.textBox.value.substring(start, end);
-    } 
+    }
 };
 
 // ********************************************************************************************* //
