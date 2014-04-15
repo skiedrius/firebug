@@ -11,6 +11,8 @@ define([
 ],
 function (Firebug, FBTrace, Obj, Tool, DebuggerLib, BreakpointStore, DebuggerClient) {
 
+"use strict";
+
 // ********************************************************************************************* //
 // Constants
 
@@ -75,6 +77,14 @@ BreakpointTool.prototype = Obj.extend(new Tool(),
         // related.
         // this.context.breakpointClients = [];
 
+        // Breakpoints need to be disabled on the server side when detach happens
+        // (see also issue 7295).
+        // xxxHonza: this is a workaround for bug:
+        // https://bugzilla.mozilla.org/show_bug.cgi?id=991688
+        var threadActor = DebuggerLib.getThreadActor(this.context.browser);
+        if (threadActor)
+            threadActor.disableAllBreakpoints();
+
         BreakpointStore.removeListener(this);
     },
 
@@ -101,18 +111,22 @@ BreakpointTool.prototype = Obj.extend(new Tool(),
 
             // Auto-correct shared breakpoint object if necessary and store the original
             // line so, listeners (like e.g. the Script panel) can update the UI.
-            var currentLine = bpClient.location.line - 1;
-            if (bp.lineNo != currentLine)
+            var correctedLine = bpClient.location.line - 1;
+            if (bp.lineNo != correctedLine)
             {
+                Trace.sysout("breakpointTool.onAddBreakpoint; line correction " +
+                    bp.lineNo + " -> " + correctedLine);
+
                 // The breakpoint line is going to be corrected, let's check if there isn't
-                // an existing breakpoint at the new line (see issue: 6253). This must be
-                // done before the correction.
-                var dupBp = BreakpointStore.findBreakpoint(bp.href, bp.lineNo);
+                // an existing breakpoint at the new line. Note: This must be done before
+                // the correction, since the value stored in the bp variable is by reference,
+                // so that would be always found and marked as duplicated to be removed.
+                var dupBp = BreakpointStore.findBreakpoint(bp.href, correctedLine);
 
                 // bpClient deals with 1-based line numbers. Firebug uses 0-based
                 // line numbers (indexes). Let's fix the line.
                 bp.params.originLineNo = bp.lineNo;
-                bp.lineNo = currentLine;
+                bp.lineNo = correctedLine;
 
                 // If an existing breakpoint has been found we need to remove the newly
                 // created one to avoid duplicities (two breakpoints at the same line).
@@ -274,7 +288,17 @@ BreakpointTool.prototype = Obj.extend(new Tool(),
             // due to debugger not being in pause state.
             var threadActor = DebuggerLib.getThreadActor(this.context.browser);
             Trace.sysout("breakpointTool.setBreakpoint; thread actor state: " +
-                threadActor.state);
+                threadActor.state + ", client state: " + thread.state);
+
+            // xxxHonza: I can't set a breakpoint sometimes because ThreadClient
+            // (context.activeThread) says state == paused, while the ThreadActor
+            // is *not* paused. This causes an exception on the server side.
+            if (thread.state == "paused" && threadActor.state != "paused")
+            {
+                // Let's see if anyone can find STR
+                FBTrace.sysout("breakpointTool.setBreakpoint; ERROR Client thread " +
+                    "is out of sync. Let me know how to reproduce this! Honza");
+            }
         }
 
         // Do not create two server side breakpoints at the same line.

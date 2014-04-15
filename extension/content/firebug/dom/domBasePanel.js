@@ -87,6 +87,7 @@ Firebug.DOMBasePanel.prototype = Obj.extend(Panel,
     initialize: function()
     {
         this.toggles = new ToggleBranch.ToggleBranch();
+        this.scrollTop = 0;
 
         Panel.initialize.apply(this, arguments);
     },
@@ -113,7 +114,11 @@ Firebug.DOMBasePanel.prototype = Obj.extend(Panel,
 
     refresh: function()
     {
-        this.rebuild(true);
+        var scrollTop = this.panelNode.scrollTop;
+        var toggles = new ToggleBranch.ToggleBranch();
+        this.tree.saveState(toggles);
+
+        this.rebuild(false, scrollTop, toggles);
     },
 
     updateSelection: function(object)
@@ -323,6 +328,7 @@ Firebug.DOMBasePanel.prototype = Obj.extend(Panel,
         return Wrapper.unwrapObject(object);
     },
 
+    // xxxHonza: |update| argument is obsolete?
     rebuild: function(update, scrollTop, toggles)
     {
         Trace.sysout("domBasePanel.rebuild; scrollTop: " + scrollTop);
@@ -552,7 +558,7 @@ Firebug.DOMBasePanel.prototype = Obj.extend(Panel,
 
         function failure(exc, context)
         {
-            Trace.sysout("domBasePanel.setPropertyValue; evaluate FAILED " + exc, exc);
+            Trace.sysout("domBasePanel.setPropertyValue; evaluation FAILED " + exc, exc);
 
             try
             {
@@ -566,10 +572,10 @@ Firebug.DOMBasePanel.prototype = Obj.extend(Panel,
             }
         }
 
-        if (object && !(object instanceof StackFrame) && !(typeof(object) === "function"))
+        if (object && !(object instanceof StackFrame) && typeof(object) !== "function")
         {
-            CommandLine.evaluate(value, this.context, object, this.context.getCurrentGlobal(),
-                success, failure, {noStateChange: true});
+            CommandLine.evaluate(value, this.context, object, null, success, failure,
+                {noStateChange: true});
         }
         else if (this.context.stopped)
         {
@@ -616,7 +622,7 @@ Firebug.DOMBasePanel.prototype = Obj.extend(Panel,
         if (name === "this")
             return;
 
-        // Toggle breakpoint on the clicked row. {@DOMModule} will peform the action
+        // Toggle breakpoint on the clicked row. {@DOMModule} will perform the action
         // and also fire corresponding event that should be handled by specific
         // panels to update the UI.
         var object = this.getRowObject(row);
@@ -638,7 +644,11 @@ Firebug.DOMBasePanel.prototype = Obj.extend(Panel,
 
     populateReadOnlyInfoTip: function(infoTip, target)
     {
-        var member = Firebug.getRepObject(target);
+        // We can't use Firebug.getRepObject to find the |member| object since
+        // tree rows are using repIgnore flag (to properly populate context menus).
+        // (see also issue 7337)
+        var row = Dom.getAncestorByClass(target, "memberRow");
+        var member = row.repObject;
         if (!member.descriptor)
         {
             // xxxHonza: this happens quite often why?

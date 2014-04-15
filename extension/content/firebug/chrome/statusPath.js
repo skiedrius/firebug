@@ -139,6 +139,7 @@ var StatusPath = Obj.extend(Module,
         // the Script panel emphasizes the current frame).
         if (!panel || !currentObject)
         {
+            Dom.collapse(panelStatusSeparator, true);
             panelStatus.clear();
         }
         else
@@ -146,7 +147,7 @@ var StatusPath = Obj.extend(Module,
             var path = panel.getObjectPath(currentObject);
             if (!path || !path.length)
             {
-                Dom.hide(panelStatusSeparator, true);
+                Dom.collapse(panelStatusSeparator, true);
                 panelStatus.clear();
             }
             else
@@ -168,7 +169,7 @@ var StatusPath = Obj.extend(Module,
                     sibling = sibling.previousSibling;
                 }
 
-                Dom.hide(panelStatusSeparator, hide);
+                Dom.collapse(panelStatusSeparator, hide);
 
                 if (panel.name != panelStatus.lastPanelName)
                     panelStatus.clear();

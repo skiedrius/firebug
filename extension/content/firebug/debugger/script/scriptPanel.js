@@ -133,6 +133,13 @@ ScriptPanel.prototype = Obj.extend(BasePanel,
 
         Firebug.unregisterUIListener(this);
 
+        // Stop marking executable lines.
+        if (this.context.markExeLinesTimeout)
+        {
+            this.context.clearTimeout(this.context.markExeLinesTimeout);
+            this.context.markExeLinesTimeout = null;
+        }
+
         BasePanel.destroy.apply(this, arguments);
     },
 
@@ -188,9 +195,9 @@ ScriptPanel.prototype = Obj.extend(BasePanel,
 
         // These buttons are visible only, if debugger is enabled.
         this.showToolbarButtons("fbBonButtons", active);
-        this.showToolbarButtons("fbLocationSeparator", active);
-        this.showToolbarButtons("fbDebuggerButtons", active);
+        this.showToolbarButtons("fbLocationSeparator", false);
         this.showToolbarButtons("fbLocationButtons", active);
+        this.showToolbarButtons("fbDebuggerButtons", active);
         this.showToolbarButtons("fbScriptButtons", active);
         this.showToolbarButtons("fbStatusButtons", active);
         this.showToolbarButtons("fbLocationList", active);
@@ -577,6 +584,18 @@ ScriptPanel.prototype = Obj.extend(BasePanel,
         // is visible to the user. It's wrong in the case where the user just
         // executed an expression on the command line, which also causes 'framesadded'
         // to be received (through clearScopes). See also issue 7028.
+
+        // If frames are added make sure to update the selection (issue 7320)
+        this.selection = this.context.currentFrame;
+
+        // xxxHonza: Script panel side-panels derive the current selection object from
+        // the Script panel (see onSelectedSidePanel in chrome.js) and those selection
+        // should be also updated. How to do it properly?
+        // There doesn't seem to be a public problem with this, but the internal state
+        // should be correct.
+        // Note that the way how selection of side panels is derived from the main
+        // panel has been rather confusing over time, but extension might depend
+        // on it, so it's rather hard to change it.
     },
 
     framescleared: function()
@@ -706,7 +725,7 @@ ScriptPanel.prototype = Obj.extend(BasePanel,
                 return true;
 
             var lineNo = +m[1];
-            if (!isNaN(lineNo) && 0 < lineNo && lineNo <= this.editor.getLineCount())
+            if (!isNaN(lineNo) && 0 < lineNo && lineNo <= this.scriptView.editor.getLineCount())
             {
                 this.scrollToLine(lineNo, {highlight: true});
                 return true;
